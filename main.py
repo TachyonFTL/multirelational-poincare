@@ -111,9 +111,9 @@ class Experiment:
                 negsamples = np.random.choice(list(self.entity_idxs.values()), 
                                               size=(data_batch.shape[0], self.nneg))
                 
-                e1_idx = torch.tensor(np.tile(np.array([data_batch[:, 0]]).T, (1, negsamples.shape[1]+1)))
-                r_idx = torch.tensor(np.tile(np.array([data_batch[:, 1]]).T, (1, negsamples.shape[1]+1)))
-                e2_idx = torch.tensor(np.concatenate((np.array([data_batch[:, 2]]).T, negsamples), axis=1))
+                e1_idx = torch.tensor(np.tile(np.array([data_batch[:, 0]]).T, (1, negsamples.shape[1]+1)), dtype=torch.long)
+                r_idx = torch.tensor(np.tile(np.array([data_batch[:, 1]]).T, (1, negsamples.shape[1]+1)), dtype=torch.long)
+                e2_idx = torch.tensor(np.concatenate((np.array([data_batch[:, 2]]).T, negsamples), axis=1), dtype=torch.long)
 
                 targets = np.zeros(e1_idx.shape)
                 targets[:, 0] = 1
@@ -143,7 +143,7 @@ class Experiment:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", type=str, default="WN18RR", nargs="?",
+    parser.add_argument("--dataset", type=str, default="inst", nargs="?",
                     help="Which dataset to use: FB15k-237 or WN18RR.")
     parser.add_argument("--model", type=str, default="poincare", nargs="?",
                     help="Which model to use: poincare or euclidean.")
@@ -151,11 +151,11 @@ if __name__ == '__main__':
                     help="Number of iterations.")
     parser.add_argument("--batch_size", type=int, default=128, nargs="?",
                     help="Batch size.")
-    parser.add_argument("--nneg", type=int, default=50, nargs="?",
+    parser.add_argument("--nneg", type=int, default=30, nargs="?",
                     help="Number of negative samples.")
-    parser.add_argument("--lr", type=float, default=50, nargs="?",
+    parser.add_argument("--lr", type=float, default=40, nargs="?",
                     help="Learning rate.")
-    parser.add_argument("--dim", type=int, default=40, nargs="?",
+    parser.add_argument("--dim", type=int, default=50, nargs="?",
                     help="Embedding dimensionality.")
     parser.add_argument("--cuda", type=bool, default=True, nargs="?",
                     help="Whether to use cuda (GPU) or not (CPU).")
@@ -164,11 +164,11 @@ if __name__ == '__main__':
     dataset = args.dataset
     data_dir = "data/%s/" % dataset
     torch.backends.cudnn.deterministic = True 
-    seed = 40
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available:
-        torch.cuda.manual_seed_all(seed) 
+    # seed = 40
+    # np.random.seed(seed)
+    # torch.manual_seed(seed)
+    # if torch.cuda.is_available:
+    #     torch.cuda.manual_seed_all(seed)
     d = Data(data_dir=data_dir)
     experiment = Experiment(learning_rate=args.lr, batch_size=args.batch_size, 
                             num_iterations=args.num_iterations, dim=args.dim, 
