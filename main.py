@@ -153,7 +153,7 @@ if __name__ == '__main__':
                     help="Batch size.")
     parser.add_argument("--nneg", type=int, default=30, nargs="?",
                     help="Number of negative samples.")
-    parser.add_argument("--lr", type=float, default=40, nargs="?",
+    parser.add_argument("--lr", type=float, default=15, nargs="?",
                     help="Learning rate.")
     parser.add_argument("--dim", type=int, default=50, nargs="?",
                     help="Embedding dimensionality.")
