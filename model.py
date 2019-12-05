@@ -1,4 +1,5 @@
 import numpy as np
+import torch.nn.functional as F
 from torch import nn
 from utils import *
 
@@ -84,7 +85,7 @@ class MuRE(torch.nn.Module):
 
 
 class EMuRP(torch.nn.Module):
-    def __init__(self, d, dim, dim_euclid):
+    def __init__(self, d, dim, dim_hidden, dim_euclid, pretrain_embedding):
         super(EMuRP, self).__init__()
         self.Eh = torch.nn.Embedding(len(d.entities), dim, padding_idx=0)
         self.Eh.weight.data = (1e-3 * torch.randn((len(d.entities), dim), dtype=torch.double, device="cuda"))
@@ -96,13 +97,28 @@ class EMuRP(torch.nn.Module):
         # self.bs = torch.nn.Parameter(torch.zeros(len(d.entities), dtype=torch.double, requires_grad=True, device="cuda"))
         # self.bo = torch.nn.Parameter(torch.zeros(len(d.entities), dtype=torch.double, requires_grad=True, device="cuda"))
         self.euclidean = nn.Embedding(len(d.entities), dim_euclid, padding_idx=0)
-        self.projection = nn.Linear(dim_euclid, dim)
+        self.embedding.weight.data.copy_(pretrain_embedding)
+        self.embedding.weight.requires_grad = False
+        self.euclidean_map_0 = nn.Linear(dim_euclid, dim_hidden)
+        self.euclidean_map_1 = nn.Linear(dim_hidden, dim)
+
+        # self.projection = nn.Linear(dim_euclid, dim)
 
         self.loss = torch.nn.BCEWithLogitsLoss()
+        self.loss_1 = torch.nn.MSELoss()
 
-    def forward(self, u_idx, r_idx, v_idx):
-        u = self.Eh.weight[u_idx]
-        v = self.Eh.weight[v_idx]
+    def forward(self, u_idx, r_idx, v_idx, phase=1):
+        if phase == 1:
+            u = self.Eh.weight[u_idx]
+            v = self.Eh.weight[v_idx]
+            return self.forward_1(u, r_idx, v)
+        elif phase == 2:
+            return self.forward_2(u_idx, r_idx, v_idx)
+        else:
+            u, v = self.forward_2(u_idx, r_idx, v_idx)
+            return self.forward_1(u, r_idx, v)
+
+    def forward_1(self, u, r_idx, v):
         Ru = self.Wu[r_idx]
         rvh = self.rvh.weight[r_idx]
 
@@ -122,5 +138,10 @@ class EMuRP(torch.nn.Module):
                           v_m / (torch.norm(v_m, 2, dim=-1, keepdim=True) - 1e-5), v_m)
 
         sqdist = (2. * artanh(torch.clamp(torch.norm(p_sum(-u_m, v_m), 2, dim=-1), 1e-10, 1 - 1e-5))) ** 2
-
         return -sqdist
+
+    def forward_2(self, u_idx, r_idx, v_idx):
+        u = self.euclidean(u_idx)
+        v = self.euclidean(v_idx)
+        return self.euclidean_map_1(F.relu(self.euclidean_map_0(u))), \
+               self.euclidean_map_1(F.relu(self.euclidean_map_0(v)))

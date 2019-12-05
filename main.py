@@ -5,6 +5,7 @@ from collections import defaultdict
 from load_data import Data
 from model import *
 from rsgd import *
+from utils import load_embeddings
 import argparse
 
     
@@ -78,10 +79,13 @@ class Experiment:
         print('Mean rank: {0}'.format(np.mean(ranks)))
         print('Mean reciprocal rank: {0}'.format(np.mean(1./np.array(ranks))))
 
-
     def train_and_eval(self):
         print("Training the %s model..." %self.model)
         self.entity_idxs = {d.entities[i]:i for i in range(len(d.entities))}
+        euclidean_embeddings = load_embeddings('ft-embs-all-lower.vec', self.entity_idxs)
+
+        print(self.entity_idxs)
+        exit()
         self.relation_idxs = {d.relations[i]:i for i in range(len(d.relations))}
 
         train_data_idxs = self.get_data_idxs(d.train_data)
